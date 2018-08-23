@@ -30,32 +30,46 @@ ol_inherits(ol_control_LayerSwitcherImage, ol_control_LayerSwitcher);
  */
 ol_control_LayerSwitcherImage.prototype.drawList = function(ul, layers)
 {	var self = this;
-	
-	var setVisibility = function(e) 
-	{	e.preventDefault(); 
-		var l = $(this).data("layer");
-		self.switchLayerVisibility(l,layers);
-		if (e.type=="touchstart") $(self.element).addClass("ol-collapsed");
+	var originUl = ul instanceof jQuery ? ul.get(0) : ul;
+
+	var setVisibility = function(layer) {
+		return function (e) {
+			e.preventDefault();
+			self.switchLayerVisibility(layer, layers);
+			if (e.type === 'touchstart') self.element.classList.add('ol-collapsed');
+		};
 	};
-	
-	ul.css("height","auto");
+
+	originUl.style.height = 'auto';
 
 	layers.forEach(function(layer)
-	{	if (self.displayInLayerSwitcher(layer))
-		{	var prev = layer.getPreview ? layer.getPreview() : ["none"];
-			var d = $("<li>").addClass("ol-imgcontainer")
-						.data ('layer', layer)
-						.click (setVisibility)
-						.on ("touchstart", setVisibility);
-			if (layer.getVisible()) d.addClass("select");
-			for (var k=0; k<prev.length; k++)
-			{	$("<img>").attr('src', prev[k])
-						.appendTo(d);
-			}
-			$("<p>").text(layer.get("title") || layer.get("name")).appendTo(d);
+	{
+		if (self.displayInLayerSwitcher(layer)) {
 
-			if (self.testLayerVisibility(layer)) d.addClass("ol-layer-hidden");
-			d.appendTo(ul);
+			var prev = layer.getPreview ? layer.getPreview() : ["none"];
+			var d = document.createElement('li');
+			d.classList.add('ol-imgcontainer');
+			// TODO: replace jquery data set on vanila
+			$(d).data('layer', layer);
+			d.addEventListener('click', setVisibility(layer));
+			d.addEventListener('touchstart', setVisibility(layer));
+			if (layer.getVisible()) {
+				d.classList.add("select");
+			}
+			for (var k=0; k<prev.length; k++)
+			{
+				var img = document.createElement('img');
+				img.setAttribute('src', prev[k]);
+				d.appendChild(img);
+			}
+			var title = document.createElement('p');
+			title.textContent = layer.get("title") || layer.get("name");
+			d.appendChild(title);
+			if (self.testLayerVisibility(layer))
+			{
+				d.classList.add("ol-layer-hidden");
+			}
+			originUl.appendChild(d)
 		}
 	});
 };
